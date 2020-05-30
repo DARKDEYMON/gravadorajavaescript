@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title><%= title %></title>
+    <script type="text/javascript" src="/javascripts/instascan.min.js"></script>
+    <link rel="stylesheet" href="stylesheets/style.css">
+</head>
+
+<body>
+    <div class="grid">
+        <div>
+            <button id="button">seleccionar</button>
+            <button id="foto">Foto</button>
+            <select id="select"></select>
+        </div>
+        <div>
+            <video id="preview"></video>
+        </div>
+    </div>
+    
+    
+    <input type="file" accept="image/*;capture=camera">
+    <ol id="añadir">
+    </ol>
+    <canvas id="canvas"></canvas>
+    <script type="text/javascript">
+        var video = document.getElementById('preview');
+        var canvas = document.getElementById('canvas')
+        draw = canvas.getContext('2d');
+        const button = document.getElementById('button');
+        const foto = document.getElementById('foto');
+        const select = document.getElementById('select');
+        let currentStream;
+
+        foto.addEventListener('click',function(){
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            draw.drawImage(video,0,0,video.videoWidth,video.videoHeight);
+        });
+
+        function stopMediaTracks(stream) {
+            stream.getTracks().forEach(track => {
+                track.stop();
+            });
+        }
+
+        function gotDevices(mediaDevices) {
+            select.innerHTML = '';
+            select.appendChild(document.createElement('option'));
+            let count = 1;
+            mediaDevices.forEach(mediaDevice => {
+                if (mediaDevice.kind === 'videoinput') {
+                    const option = document.createElement('option');
+                    option.value = mediaDevice.deviceId;
+                    const label = mediaDevice.label || `Camera ${count++}`;
+                    const textNode = document.createTextNode(label);
+                    option.appendChild(textNode);
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        button.addEventListener('click', event => {
+            if (typeof currentStream !== 'undefined') {
+                stopMediaTracks(currentStream);
+            }
+            const videoConstraints = {};
+            if (select.value === '') {
+                videoConstraints.facingMode = 'environment';
+            } else {
+                videoConstraints.deviceId = {
+                    exact: select.value
+                };
+            }
+            const constraints = {
+                video: videoConstraints,
+                audio: false
+            };
+            navigator.mediaDevices
+                .getUserMedia(constraints)
+                .then(stream => {
+                    currentStream = stream;
+                    video.srcObject = stream;
+                    return navigator.mediaDevices.enumerateDevices();
+                })
+                .then(gotDevices)
+                .catch(error => {
+                    console.error(error);
+                });
+            desplegar();
+        });
+
+        navigator.mediaDevices.enumerateDevices().then(gotDevices);
+
+
+        function desplegar(){
+            let scanner = new Instascan.Scanner({
+                video: video
+            });
+            scanner.addListener('scan', function (content) {
+                document.getElementById('añadir').innerHTML = document.getElementById('añadir').innerHTML + '<li>' + content + '<li>'
+            });
+            Instascan.Camera.getCameras().then(function (cameras) {
+                if (cameras.length > 0) {
+                    scanner.start(cameras[0]);
+                } else {
+                    console.error('No cameras found.');
+                }
+            }).catch(function (e) {
+                console.error(e);
+            });
+        }
+
+    </script>
+</body>
+
+</html>

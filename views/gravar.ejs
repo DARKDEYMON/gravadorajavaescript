@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script type="text/javascript" src="/javascripts/instascan.min.js"></script>
+    <link rel="stylesheet" href="stylesheets/style.css">
+</head>
+
+<body>
+    <div class="grid">
+        <div>
+            <button id='start'>Start Recording</button>
+            <button id='stop' disabled>Stop Recording</button>
+            <button id='ocultar'>show</button>
+        </div>
+        <div>
+            <video id="video" autoplay muted></video>
+        </div>
+    </div>
+    
+    <ul id='ul'>
+     Downloads List:
+    </ul>
+    <script type="text/javascript">
+        var video = document.getElementById('video');
+        var streamg;
+        navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(function(stream){
+            streamg = stream;
+            video.srcObject=stream;
+            video.play()
+        });
+        var startBtn = document.getElementById('start');
+        var stopBtn = document.getElementById('stop');
+        var ul = document.getElementById('ul');
+        function startRecording() {
+            recorder = new MediaRecorder(streamg,{
+                mimeType:"video/webm;codecs=vp9.0"
+            });
+            recorder.start();
+            stopBtn.removeAttribute('disabled');
+            startBtn.disabled = true;
+        }
+        startBtn.onclick = startRecording;
+        function stopRecording() {
+            recorder.ondataavailable = e => {
+                ul.style.display = 'block';
+                var a = document.createElement('a'),
+                    li = document.createElement('li');
+                a.download = ['video_', (new Date() + '').slice(4, 28), '.webm'].join('');
+                a.href = URL.createObjectURL(e.data);
+                a.textContent = a.download;
+                li.appendChild(a);
+                ul.appendChild(li);
+            };
+            recorder.stop();
+            startBtn.removeAttribute('disabled');
+            stopBtn.disabled = true;
+        }
+        stopBtn.onclick = stopRecording;
+
+        var ocultar = document.getElementById('ocultar');
+        function show(){
+            if (video.style.display == ""){
+                video.style.display = 'None';
+            }else{
+                video.style.display = '';
+            }
+        }
+        ocultar.onclick = show
+    </script>
+</body>
+
+</html>
